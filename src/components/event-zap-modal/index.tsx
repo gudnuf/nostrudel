@@ -28,6 +28,7 @@ import PayStep from "./pay-step";
 import { getInvoiceFromCallbackUrl } from "../../helpers/lnurl";
 import UserLink from "../user/user-link";
 import relayHintService from "../../services/event-relay-hint";
+import useCashu from "../../hooks/use-cashu";
 
 export type PayRequest = { invoice?: string; pubkey: string; error?: any };
 
@@ -39,7 +40,7 @@ async function getPayRequestForPubkey(
   additionalRelays?: Iterable<string>,
 ): Promise<PayRequest> {
   const metadata = userMetadataService.getSubject(pubkey).value;
-  const address = metadata?.lud16 || metadata?.lud06;
+  const address = metadata?.lud16 || metadata?.lud06 || metadata?.bolt12Offer;
   if (!address) throw new Error("User missing lightning address");
   const lnurlMetadata = await lnurlMetadataService.requestMetadata(address);
 
@@ -153,6 +154,55 @@ export default function ZapModal({
 }: ZapModalProps) {
   const [callbacks, setCallbacks] = useState<PayRequest[]>();
 
+  const { getProofs, getWallet, customGetMeltQuote } = useCashu();
+
+  const handleMeltTokens = async (amountToMelt: number, pubkey: string) => {
+    const metadata = userMetadataService.getSubject(pubkey).value;
+    const offer = metadata?.bolt12Offer;
+
+    if (!offer) {
+      throw new Error("No BOLT 12 Offer found");
+    }
+
+    if (!amountToMelt) {
+      alert("Amount to melt is required");
+      throw new Error("Amount to melt is required");
+    }
+
+    if (!offer) {
+      alert("BOLT 12 Offer is required");
+      throw new Error("BOLT 12 Offer is required");
+    }
+
+    const proofs = getProofs();
+
+    const totalAmount = proofs.reduceRight((a, b) => a + b.amount, 0);
+
+    if (totalAmount < amountToMelt) {
+      alert("Not enough tokens to melt");
+      throw new Error("Not enough tokens to melt");
+    }
+
+    const wallet = getWallet();
+
+    const { send, returnChange } = await wallet.send(amountToMelt, proofs);
+
+    window.localStorage.setItem("cashu.proofs", JSON.stringify(returnChange));
+
+    const meltQuoteRes = await customGetMeltQuote(wallet.mint.mintUrl, {
+      amount: amountToMelt,
+      request: offer,
+      unit: "sat",
+    });
+
+    console.log("Quote", meltQuoteRes);
+
+    const meltTokens = await wallet.meltTokens(meltQuoteRes, send);
+
+    console.log("Melt Tokens", meltTokens);
+    return { invoice: "", pubkey };
+  };
+
   const renderContent = () => {
     if (callbacks && callbacks.length > 0) {
       return <PayStep callbacks={callbacks} onComplete={onZapped} />;
@@ -167,7 +217,19 @@ export default function ZapModal({
           embedProps={embedProps}
           allowComment={allowComment}
           onSubmit={async (values) => {
+            console.log("Submitting", values);
             const amountInMSats = values.amount * 1000;
+            if (values.isNuts) {
+              const localKeyset = window.localStorage.getItem("cashu.keyset");
+
+              if (!localKeyset) {
+                throw new Error("No keyset found");
+              }
+
+              const callback = await handleMeltTokens(values.amount, pubkey);
+
+              setCallbacks([callback]);
+            }
             if (event) {
               setCallbacks(
                 await getPayRequestsForEvent(event, amountInMSats, values.comment, pubkey, additionalRelays),

@@ -6,12 +6,13 @@ import { useInvoiceModalContext } from "../../../providers/route/invoice-modal";
 
 export default function UserZapButton({ pubkey, ...props }: { pubkey: string } & Omit<IconButtonProps, "aria-label">) {
   const metadata = useUserMetadata(pubkey);
+  console.log("User metadata", metadata);
   const { isOpen, onOpen, onClose } = useDisclosure();
   const { requestPay } = useInvoiceModalContext();
   if (!metadata) return null;
 
   // use lud06 and lud16 fields interchangeably
-  let tipAddress = metadata.lud06 || metadata.lud16;
+  let tipAddress = metadata.lud06 || metadata.lud16 || metadata.bolt12Offer;
 
   if (!tipAddress) return null;
 

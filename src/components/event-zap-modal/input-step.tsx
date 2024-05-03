@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 
 import { NostrEvent } from "../../types/nostr-event";
 import { readablizeSats } from "../../helpers/bolt11";
-import { LightningIcon } from "../icons";
+import { ECashIcon, LightningIcon } from "../icons";
 import useUserLNURLMetadata from "../../hooks/use-user-lnurl-metadata";
 import { getZapSplits } from "../../helpers/nostr/zaps";
 import { EmbedEvent, EmbedProps } from "../embed-event";
@@ -39,7 +39,7 @@ export type InputStepProps = {
   allowComment?: boolean;
   showEmbed?: boolean;
   embedProps?: EmbedProps;
-  onSubmit: (values: { amount: number; comment: string }) => void;
+  onSubmit: (values: { amount: number; comment: string; isNuts: boolean }) => void;
 };
 
 export default function InputStep({
@@ -63,11 +63,13 @@ export default function InputStep({
   } = useForm<{
     amount: number;
     comment: string;
+    isNuts: boolean;
   }>({
     mode: "onBlur",
     defaultValues: {
       amount: initialAmount ?? (parseInt(customZapAmounts.split(",")[0]) || 100),
       comment: initialComment ?? "",
+      isNuts: false,
     },
   });
 
@@ -80,6 +82,11 @@ export default function InputStep({
   const actionName = canZap ? "Zap" : "Tip";
 
   const onSubmitZap = handleSubmit(onSubmit);
+
+  const handleZapNuts = () => {
+    setValue("isNuts", true);
+    onSubmitZap();
+  };
 
   return (
     <form onSubmit={onSubmitZap}>
@@ -118,6 +125,9 @@ export default function InputStep({
             autoFocus
           >
             {actionName} {readablizeSats(watch("amount"))} sats
+          </Button>
+          <Button leftIcon={<ECashIcon />} onClick={handleZapNuts} isLoading={isSubmitting} variant="solid" size="md">
+            {actionName} {readablizeSats(watch("amount"))} eSats
           </Button>
         </Flex>
       </Flex>
