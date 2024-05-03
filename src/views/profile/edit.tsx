@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 
 import { ExternalLinkIcon } from "../../components/icons";
 import { isLNURL } from "../../helpers/lnurl";
+import { isBolt12 } from "../../helpers/bolt12";
 import { Kind0ParsedContent } from "../../helpers/nostr/user-metadata";
 import { useReadRelays } from "../../hooks/use-client-relays";
 import useCurrentAccount from "../../hooks/use-current-account";
@@ -41,6 +42,7 @@ type FormData = {
   website?: string;
   nip05?: string;
   lightningAddress?: string;
+  bolt12Offer?: string;
 };
 
 type MetadataFormProps = {
@@ -172,6 +174,28 @@ const MetadataForm = ({ defaultValues, onSubmit }: MetadataFormProps) => {
         />
         <FormErrorMessage>{errors.lightningAddress?.message}</FormErrorMessage>
       </FormControl>
+      <FormControl isInvalid={!!errors.bolt12Offer}>
+        <FormLabel>Bolt12 Offer</FormLabel>
+        <Input
+          autoComplete="off"
+          isDisabled={isSubmitting}
+          {...register("bolt12Offer", {
+            validate: async (v) => {
+              console.log("v=" + v);
+              if (!v) return true;
+              if (!isBolt12(v)) {
+                return "Must be a BOLT12 Offer";
+              }
+              // const metadata = await lnurlMetadataService.requestMetadata(v);
+              // if (!metadata) {
+              //   return "Incorrect or broken BOLT12 Offer";
+              // }
+              return true;
+            },
+          })}
+        />
+        <FormErrorMessage>{errors.bolt12Offer?.message}</FormErrorMessage>
+      </FormControl>
       <Flex alignSelf="flex-end" gap="2">
         <Button as={Link} isExternal href="https://metadata.nostr.com/" rightIcon={<ExternalLinkIcon />}>
           Download Backup
@@ -221,6 +245,8 @@ export const ProfileEditView = () => {
         newMetadata.lud16 = data.lightningAddress;
       }
     }
+
+    if (data.bolt12Offer) newMetadata.bolt12Offer = data.bolt12Offer;
 
     const draft: DraftNostrEvent = {
       created_at: dayjs().unix(),
