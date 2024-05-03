@@ -10,6 +10,7 @@ import { FormProvider, useForm } from "react-hook-form";
 import VerticalPageLayout from "../../components/vertical-page-layout";
 import VersionButton from "../../components/version-button";
 import PostSettings from "./post-settings";
+import CashuSettings from "./cashu-settings";
 
 export default function SettingsView() {
   const toast = useToast();
@@ -41,6 +42,7 @@ export default function SettingsView() {
           <PerformanceSettings />
           <PrivacySettings />
           <LightningSettings />
+          <CashuSettings />
           <DatabaseSettings />
         </Accordion>
       </FormProvider>
