@@ -224,6 +224,7 @@ export const ProfileEditView = () => {
       website: metadata?.website,
       nip05: metadata?.nip05,
       lightningAddress: metadata?.lud16 || metadata?.lud06,
+      bolt12Offer: metadata?.bolt12Offer,
     }),
     [metadata],
   );
