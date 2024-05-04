@@ -44,7 +44,7 @@ async function getPayRequestForPubkey(
   if (!address) throw new Error("User missing lightning address");
 
   if (metadata?.bolt12Offer) {
-    return { invoice: `${metadata.bolt12Offer}:${amount}`, pubkey };
+    return { invoice: `${metadata.bolt12Offer}:${Math.floor(amount / 1000)}`, pubkey };
   }
 
   const lnurlMetadata = await lnurlMetadataService.requestMetadata(address);
