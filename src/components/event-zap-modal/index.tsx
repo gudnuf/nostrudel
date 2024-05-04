@@ -42,6 +42,11 @@ async function getPayRequestForPubkey(
   const metadata = userMetadataService.getSubject(pubkey).value;
   const address = metadata?.lud16 || metadata?.lud06 || metadata?.bolt12Offer;
   if (!address) throw new Error("User missing lightning address");
+
+  if (metadata?.bolt12Offer) {
+    return { invoice: `${metadata.bolt12Offer}:${amount}`, pubkey };
+  }
+
   const lnurlMetadata = await lnurlMetadataService.requestMetadata(address);
 
   if (!lnurlMetadata) throw new Error("LNURL endpoint unreachable");
@@ -229,6 +234,7 @@ export default function ZapModal({
               const callback = await handleMeltTokens(values.amount, pubkey);
 
               setCallbacks([callback]);
+              return;
             }
             if (event) {
               setCallbacks(
