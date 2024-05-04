@@ -53,6 +53,9 @@ export default function UserAboutTab() {
 
   const aboutContent = metadata?.about && buildDescriptionContent(metadata?.about);
   const parsedNip05 = metadata?.nip05 ? parseAddress(metadata.nip05) : undefined;
+  const parsedBolt12Offer = metadata?.bolt12Offer ? metadata.bolt12Offer : undefined;
+
+  const bolt12QR = { pubkey: parsedBolt12Offer };
 
   return (
     <Flex
@@ -124,20 +127,18 @@ export default function UserAboutTab() {
       )}
 
       <Flex gap="2" px="2" direction="column">
-        {metadata?.lud16 && (
+        {metadata?.bolt12Offer && (
           <Flex gap="2">
             <LightningIcon />
-            <Link href={getLudEndpoint(metadata.lud16)} isExternal>
-              {metadata.lud16}
-            </Link>
+            <Text>{truncatedId(metadata.bolt12Offer, 10)}</Text>
+            <CopyIconButton value={metadata.bolt12Offer} title="Copy BOLT12 Offer" aria-label="Copy BOLT12 Offer" size="xs" />
+            <QrIconButton pubkey={parsedBolt12Offer} title="Show QrCode" aria-label="Show QrCode" size="xs" />
           </Flex>
         )}
         {parsedNip05 && (
           <Flex gap="2">
             <AtIcon />
-            <Link href={`//${parsedNip05.domain}/.well-known/nostr.json?name=${parsedNip05.name}`} isExternal>
-              <UserDnsIdentityIcon pubkey={pubkey} />
-            </Link>
+            <Text>{truncatedId(npub, 10)}</Text>
           </Flex>
         )}
         {metadata?.website && (
